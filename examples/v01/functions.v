@@ -1,11 +1,11 @@
-// functions.v — Function definitions and calls using func keyword
+// functions.v — Function definitions and calls using fun keyword
 // Demonstrates: func, typed params, return types, forward calls, recursion
 
 module main
 
 // ── Forward-declared functions are called before their definition ─────────────
 
-func main() {
+fun main() {
     // Basic arithmetic functions
     let sum: i64 = add(10, 20)
     print(sum)
@@ -41,33 +41,33 @@ func main() {
 
 // ── Arithmetic ────────────────────────────────────────────────────────────────
 
-func add(a: i64, b: i64) -> i64 {
+fun add(a: i64, b: i64) -> i64 {
     return a + b
 }
 
-func sub(a: i64, b: i64) -> i64 {
+fun sub(a: i64, b: i64) -> i64 {
     return a - b
 }
 
-func mul(a: i64, b: i64) -> i64 {
+fun mul(a: i64, b: i64) -> i64 {
     return a * b
 }
 
-func div(a: i64, b: i64) -> i64 {
+fun div(a: i64, b: i64) -> i64 {
     if b == 0 {
         return 0
     }
     return a / b
 }
 
-func mod(a: i64, b: i64) -> i64 {
+fun mod(a: i64, b: i64) -> i64 {
     return a % b
 }
 
 // ── Recursive functions ───────────────────────────────────────────────────────
 
 // Fibonacci — 0 1 1 2 3 5 8 13 21 34 ...
-func fib(n: i64) -> i64 {
+fun fib(n: i64) -> i64 {
     if n <= 1 {
         return n
     }
@@ -75,7 +75,7 @@ func fib(n: i64) -> i64 {
 }
 
 // Factorial
-func fact(n: i64) -> i64 {
+fun fact(n: i64) -> i64 {
     if n <= 1 {
         return 1
     }
@@ -83,7 +83,7 @@ func fact(n: i64) -> i64 {
 }
 
 // Power: base^exp
-func power(base: i64, exp: i64) -> i64 {
+fun power(base: i64, exp: i64) -> i64 {
     if exp == 0 {
         return 1
     }
@@ -92,12 +92,12 @@ func power(base: i64, exp: i64) -> i64 {
 
 // ── String functions ──────────────────────────────────────────────────────────
 
-func greet(name: string) {
+fun greet(name: string) {
     print("Hello, ")
     print(name)
 }
 
-func greet_formal(title: string, name: string) {
+fun greet_formal(title: string, name: string) {
     print("Good day, ")
     print(title)
     print(" ")
@@ -106,20 +106,20 @@ func greet_formal(title: string, name: string) {
 
 // ── Boolean functions ─────────────────────────────────────────────────────────
 
-func is_even(n: i64) -> bool {
+fun is_even(n: i64) -> bool {
     return n % 2 == 0
 }
 
-func is_odd(n: i64) -> bool {
+fun is_odd(n: i64) -> bool {
     return n % 2 != 0
 }
 
-func is_positive(n: i64) -> bool {
+fun is_positive(n: i64) -> bool {
     return n > 0
 }
 
 // Primality test
-func is_prime(n: i64) -> bool {
+fun is_prime(n: i64) -> bool {
     if n < 2 {
         return false
     }
@@ -135,11 +135,11 @@ func is_prime(n: i64) -> bool {
 
 // ── No-return (void) functions ────────────────────────────────────────────────
 
-func print_separator() {
+fun print_separator() {
     print("────────────────────────────────")
 }
 
-func print_n_times(msg: string, n: i64) {
+fun print_n_times(msg: string, n: i64) {
     var i: i64 = 0
     vloop(i < n) {
         print(msg)

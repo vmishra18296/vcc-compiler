@@ -3,7 +3,7 @@
 
 module main
 
-func demo_arithmetic() {
+fun demo_arithmetic() {
     let a: i64 = 20
     let b: i64 = 6
 
@@ -20,7 +20,7 @@ func demo_arithmetic() {
     print(rem)
 }
 
-func demo_comparison() {
+fun demo_comparison() {
     let x: i64 = 10
     let y: i64 = 20
 
@@ -36,7 +36,7 @@ func demo_comparison() {
     print(lt)
 }
 
-func demo_logical() {
+fun demo_logical() {
     let a: bool = true
     let b: bool = false
 
@@ -53,7 +53,7 @@ func demo_logical() {
     print(complex)
 }
 
-func demo_bitwise() {
+fun demo_bitwise() {
     let a: i64 = 0b1010    // 10
     let b: i64 = 0b1100    // 12
 
@@ -71,7 +71,7 @@ func demo_bitwise() {
     print(rsh)
 }
 
-func demo_operator_precedence() {
+fun demo_operator_precedence() {
     // Precedence: * before +
     let r1: i64 = 2 + 3 * 4        // 14 (not 20)
 
@@ -88,7 +88,7 @@ func demo_operator_precedence() {
     print(r4)
 }
 
-func main() {
+fun main() {
     demo_arithmetic()
     demo_comparison()
     demo_logical()

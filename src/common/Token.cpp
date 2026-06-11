@@ -152,7 +152,7 @@ std::string_view tokenTypeName(TokenKind kind) noexcept {
         case TokenKind::KwBreak:     return "BREAK";
         case TokenKind::KwContinue:  return "CONTINUE";
         case TokenKind::KwMatch:     return "MATCH";
-        case TokenKind::KwFunc:      return "FUNC";
+        case TokenKind::KwFun:       return "FUN";
         case TokenKind::KwEf:        return "EF";
         case TokenKind::KwEl:        return "EL";
         case TokenKind::KwArray:     return "ARRAY";
@@ -230,7 +230,7 @@ const std::unordered_map<std::string_view, TokenKind>& Token::keywords() noexcep
     // Static local — initialised once, thread-safe since C++11.
     static const std::unordered_map<std::string_view, TokenKind> kw {
         {"fn",        TokenKind::KwFn},
-        {"func",      TokenKind::KwFunc},
+        {"fun",       TokenKind::KwFun},
         {"let",       TokenKind::KwLet},
         {"var",       TokenKind::KwVar},
         {"const",     TokenKind::KwConst},

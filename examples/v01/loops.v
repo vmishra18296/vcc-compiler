@@ -4,7 +4,7 @@
 module main
 
 // Count from 1 to n
-func count_up(n: i64) {
+fun count_up(n: i64) {
     var i: i64 = 1
     vloop(i <= n) {
         print(i)
@@ -13,7 +13,7 @@ func count_up(n: i64) {
 }
 
 // Count down from n to 1
-func count_down(n: i64) {
+fun count_down(n: i64) {
     var i: i64 = n
     vloop(i > 0) {
         print(i)
@@ -22,7 +22,7 @@ func count_down(n: i64) {
 }
 
 // Sum of 1..n
-func sum(n: i64) -> i64 {
+fun sum(n: i64) -> i64 {
     var i: i64 = 1
     var s: i64 = 0
     vloop(i <= n) {
@@ -33,7 +33,7 @@ func sum(n: i64) -> i64 {
 }
 
 // Factorial n!
-func factorial(n: i64) -> i64 {
+fun factorial(n: i64) -> i64 {
     var result: i64 = 1
     var i: i64 = 2
     vloop(i <= n) {
@@ -44,7 +44,7 @@ func factorial(n: i64) -> i64 {
 }
 
 // Greatest common divisor (Euclidean)
-func gcd(a: i64, b: i64) -> i64 {
+fun gcd(a: i64, b: i64) -> i64 {
     var x: i64 = a
     var y: i64 = b
     vloop(y != 0) {
@@ -56,14 +56,14 @@ func gcd(a: i64, b: i64) -> i64 {
 }
 
 // Brace-less vloop — single statement body (needs braces in VCC v0.1)
-func print_squares(n: i64) {
+fun print_squares(n: i64) {
     var i: i64 = 1
     vloop(i <= n) {
         i = i + 1
     }
 }
 
-func main() {
+fun main() {
     count_up(5)
     count_down(3)
 

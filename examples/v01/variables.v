@@ -9,7 +9,7 @@ const PI     = 3.1415926
 const MAX    = 100
 const FLAG   = true
 
-func main() {
+fun main() {
     // Inferred types from literals
     name   = "John"       // string
     age    = 25           // int

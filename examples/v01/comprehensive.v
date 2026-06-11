@@ -14,7 +14,7 @@ const APP     = "VCC Demo"
 
 // ── Forward references — main() calls everything defined below ───────────────
 
-func main() {
+fun main() {
     print(APP)
     print("────────────────────────────────────")
 
@@ -89,7 +89,7 @@ func main() {
 
 // ── Utility functions ─────────────────────────────────────────────────────────
 
-func sum(n: i64) -> i64 {
+fun sum(n: i64) -> i64 {
     var total: i64 = 0
     var i: i64     = 1
     vloop(i <= n) {
@@ -99,19 +99,19 @@ func sum(n: i64) -> i64 {
     return total
 }
 
-func fib(n: i64) -> i64 {
+fun fib(n: i64) -> i64 {
     if n <= 1 {
         return n
     }
     return fib(n - 1) + fib(n - 2)
 }
 
-func greet(name: string) {
+fun greet(name: string) {
     print("Hello, ")
     print(name)
 }
 
-func is_prime(n: i64) -> bool {
+fun is_prime(n: i64) -> bool {
     if n < 2 {
         return false
     }
@@ -125,28 +125,28 @@ func is_prime(n: i64) -> bool {
     return true
 }
 
-func abs(n: i64) -> i64 {
+fun abs(n: i64) -> i64 {
     if n < 0 {
         return 0 - n
     }
     return n
 }
 
-func max(a: i64, b: i64) -> i64 {
+fun max(a: i64, b: i64) -> i64 {
     if a > b {
         return a
     }
     return b
 }
 
-func min(a: i64, b: i64) -> i64 {
+fun min(a: i64, b: i64) -> i64 {
     if a < b {
         return a
     }
     return b
 }
 
-func clamp(val: i64, lo: i64, hi: i64) -> i64 {
+fun clamp(val: i64, lo: i64, hi: i64) -> i64 {
     if val < lo {
         return lo
     }

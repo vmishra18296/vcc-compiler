@@ -3,7 +3,7 @@
 
 module main
 
-func day_name(day: i64) {
+fun day_name(day: i64) {
     match day {
         1 => print("Monday")
         2 => print("Tuesday")
@@ -16,7 +16,7 @@ func day_name(day: i64) {
     }
 }
 
-func http_status(code: i64) {
+fun http_status(code: i64) {
     match code {
         200 => print("OK")
         201 => print("Created")
@@ -29,7 +29,7 @@ func http_status(code: i64) {
     }
 }
 
-func traffic_light(state: i64) {
+fun traffic_light(state: i64) {
     // 0 = red, 1 = yellow, 2 = green
     match state {
         0 => print("STOP")
@@ -39,7 +39,7 @@ func traffic_light(state: i64) {
     }
 }
 
-func boolean_name(flag: i64) {
+fun boolean_name(flag: i64) {
     match flag {
         0 => print("FALSE")
         1 => print("TRUE")
@@ -47,7 +47,7 @@ func boolean_name(flag: i64) {
     }
 }
 
-func main() {
+fun main() {
     day_name(1)
     day_name(5)
     day_name(9)

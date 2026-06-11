@@ -38,7 +38,7 @@ enum class TokenKind : uint16_t {
 
     // ── Keywords ─────────────────────────────────────────────────────────────
     KwFn,
-    KwFunc,    ///< func — alias for fn
+    KwFun,     ///< fun — alias for fn
     KwLet,
     KwVar,
     KwConst,

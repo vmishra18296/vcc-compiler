@@ -3,7 +3,7 @@
 
 module main
 
-func classify_temperature(temp: i64) {
+fun classify_temperature(temp: i64) {
     // Braced style
     if temp > 50 {
         print("Scorching")
@@ -22,7 +22,7 @@ func classify_temperature(temp: i64) {
     }
 }
 
-func check_score(score: i64) {
+fun check_score(score: i64) {
     // Brace-less style — single statement per branch
     if score >= 90
         print("Grade: A")
@@ -36,7 +36,7 @@ func check_score(score: i64) {
         print("Grade: F")
 }
 
-func is_even(n: i64) -> bool {
+fun is_even(n: i64) -> bool {
     if n % 2 == 0 {
         return true
     }
@@ -45,7 +45,7 @@ func is_even(n: i64) -> bool {
     }
 }
 
-func main() {
+fun main() {
     classify_temperature(40)
     classify_temperature(20)
     classify_temperature(-5)

@@ -3,7 +3,7 @@
 
 module main
 
-func main() {
+fun main() {
     // Integer array — type inferred as array[i64]
     nums = array[1, 2, 3, 4, 5]
 

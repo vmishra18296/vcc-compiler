@@ -71,7 +71,7 @@ void Parser::synchronize() {
         if (current().is(TokenKind::Semicolon)) { advance(); return; }
         switch (current().kind) {
             case TokenKind::KwFn:
-            case TokenKind::KwFunc:
+            case TokenKind::KwFun:
             case TokenKind::KwStruct:
             case TokenKind::KwEnum:
             case TokenKind::KwLet:
@@ -128,7 +128,7 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
 
     switch (current().kind) {
         case TokenKind::KwFn:        advance(); return parseFunctionDecl(isPub);
-        case TokenKind::KwFunc:      advance(); return parseFunctionDecl(isPub);
+        case TokenKind::KwFun:       advance(); return parseFunctionDecl(isPub);
         case TokenKind::KwStruct:    advance(); return parseStructDecl(isPub);
         case TokenKind::KwEnum:      advance(); return parseEnumDecl(isPub);
         case TokenKind::KwType:      advance(); return parseTypeAliasDecl(isPub);
@@ -733,7 +733,7 @@ std::unique_ptr<TypeNode> Parser::parseType() {
     }
 
     // Function type: fn/func (T1, T2) -> R
-    if (match(TokenKind::KwFn) || match(TokenKind::KwFunc)) {
+    if (match(TokenKind::KwFn) || match(TokenKind::KwFun)) {
         expect(TokenKind::LParen, "expected '(' in function type");
         std::vector<std::unique_ptr<TypeNode>> params;
         if (!check(TokenKind::RParen)) {

@@ -5,7 +5,7 @@ module main
 
 import io
 
-func main() {
+fun main() {
     print("Hello, V!")
     print("Welcome to VCC v0.1")
 }
