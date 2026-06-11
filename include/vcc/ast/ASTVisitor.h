@@ -44,6 +44,7 @@ class VloopStmt;
 class ForStmt;
 class BreakStmt;
 class ContinueStmt;
+class MatchStmt;
 
 // Expressions
 class BinaryExpr;
@@ -60,6 +61,7 @@ class CharLiteralExpr;
 class BoolLiteralExpr;
 class NilLiteralExpr;
 class CastExpr;
+class ArrayLiteralExpr;
 
 // Types
 class NamedTypeNode;
@@ -96,6 +98,7 @@ public:
     virtual void visit(ForStmt&)      = 0;
     virtual void visit(BreakStmt&)    = 0;
     virtual void visit(ContinueStmt&) = 0;
+    virtual void visit(MatchStmt&)    = 0;
 
     // ── Expressions ──────────────────────────────────────────────────────────
     virtual void visit(BinaryExpr&)       = 0;
@@ -112,6 +115,7 @@ public:
     virtual void visit(BoolLiteralExpr&)  = 0;
     virtual void visit(NilLiteralExpr&)   = 0;
     virtual void visit(CastExpr&)         = 0;
+    virtual void visit(ArrayLiteralExpr&) = 0;
 
     // ── Types ────────────────────────────────────────────────────────────────
     virtual void visit(NamedTypeNode&)    = 0;
@@ -145,6 +149,7 @@ public:
     void visit(ForStmt&)          override {}
     void visit(BreakStmt&)        override {}
     void visit(ContinueStmt&)     override {}
+    void visit(MatchStmt&)        override {}
 
     void visit(BinaryExpr&)        override {}
     void visit(UnaryExpr&)         override {}
@@ -160,6 +165,7 @@ public:
     void visit(BoolLiteralExpr&)   override {}
     void visit(NilLiteralExpr&)    override {}
     void visit(CastExpr&)          override {}
+    void visit(ArrayLiteralExpr&)  override {}
 
     void visit(NamedTypeNode&)     override {}
     void visit(PointerTypeNode&)   override {}

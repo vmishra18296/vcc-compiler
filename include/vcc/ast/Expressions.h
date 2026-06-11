@@ -326,4 +326,22 @@ public:
     [[nodiscard]] std::string_view nodeName() const noexcept override { return "NilLiteralExpr"; }
 };
 
+// ─── ArrayLiteralExpr ────────────────────────────────────────────────────────
+
+/// array[elem, elem, …]
+class ArrayLiteralExpr : public Expr {
+public:
+    explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> elements,
+                               common::SourceRange range = {})
+        : Expr(range), elements_(std::move(elements)) {}
+
+    [[nodiscard]] const std::vector<std::unique_ptr<Expr>>& elements() const noexcept { return elements_; }
+
+    void accept(ASTVisitor& v) override { v.visit(*this); }
+    [[nodiscard]] std::string_view nodeName() const noexcept override { return "ArrayLiteralExpr"; }
+
+private:
+    std::vector<std::unique_ptr<Expr>> elements_;
+};
+
 } // namespace vcc::ast

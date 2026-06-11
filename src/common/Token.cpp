@@ -152,6 +152,10 @@ std::string_view tokenTypeName(TokenKind kind) noexcept {
         case TokenKind::KwBreak:     return "BREAK";
         case TokenKind::KwContinue:  return "CONTINUE";
         case TokenKind::KwMatch:     return "MATCH";
+        case TokenKind::KwFunc:      return "FUNC";
+        case TokenKind::KwEf:        return "EF";
+        case TokenKind::KwEl:        return "EL";
+        case TokenKind::KwArray:     return "ARRAY";
 
         // Arithmetic
         case TokenKind::Plus:        return "PLUS";
@@ -226,10 +230,13 @@ const std::unordered_map<std::string_view, TokenKind>& Token::keywords() noexcep
     // Static local — initialised once, thread-safe since C++11.
     static const std::unordered_map<std::string_view, TokenKind> kw {
         {"fn",        TokenKind::KwFn},
+        {"func",      TokenKind::KwFunc},
         {"let",       TokenKind::KwLet},
         {"var",       TokenKind::KwVar},
         {"const",     TokenKind::KwConst},
         {"if",        TokenKind::KwIf},
+        {"ef",        TokenKind::KwEf},
+        {"el",        TokenKind::KwEl},
         {"else",      TokenKind::KwElse},
         {"while",     TokenKind::KwWhile},
         {"for",       TokenKind::KwFor},
@@ -252,6 +259,7 @@ const std::unordered_map<std::string_view, TokenKind>& Token::keywords() noexcep
         {"break",     TokenKind::KwBreak},
         {"continue",  TokenKind::KwContinue},
         {"match",     TokenKind::KwMatch},
+        {"array",     TokenKind::KwArray},
     };
     return kw;
 }
@@ -259,7 +267,7 @@ const std::unordered_map<std::string_view, TokenKind>& Token::keywords() noexcep
 // ─── Token predicates ─────────────────────────────────────────────────────────
 
 bool Token::isKeyword() const noexcept {
-    return kind >= TokenKind::KwFn && kind <= TokenKind::KwMatch;
+    return kind >= TokenKind::KwFn && kind <= TokenKind::KwArray;
 }
 
 bool Token::isLiteral() const noexcept {

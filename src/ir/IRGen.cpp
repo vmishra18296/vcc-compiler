@@ -198,6 +198,59 @@ void IRGen::visit(VloopStmt& s) {
     builder_.setBlock(builder_.addBlock(exitLabel));
 }
 
+void IRGen::visit(MatchStmt& s) {
+    // Lower: evaluate subject, then chain of cmp + condbranch per arm.
+    const_cast<Expr&>(s.subject()).accept(*this);
+    RegID subj = lastReg_;
+
+    const std::string exitLabel = builder_.newLabel("match_exit");
+
+    for (std::size_t i = 0; i < s.arms().size(); ++i) {
+        auto& arm = s.arms()[i];
+        const std::string bodyLabel = builder_.newLabel("match_arm");
+        const std::string nextLabel = (i + 1 < s.arms().size())
+            ? builder_.newLabel("match_next")
+            : exitLabel;
+
+        if (!arm.pattern) {
+            // wildcard '_' — unconditional branch to body
+            builder_.buildBranch(bodyLabel);
+        } else {
+            const_cast<Expr&>(*arm.pattern).accept(*this);
+            RegID patternReg = lastReg_;
+            RegID cmpReg = builder_.buildBinOp(Opcode::CmpEq, subj, patternReg);
+            builder_.buildCondBranch(cmpReg, bodyLabel, nextLabel);
+        }
+
+        builder_.setBlock(builder_.addBlock(bodyLabel));
+        const_cast<Stmt&>(*arm.body).accept(*this);
+        if (!builder_.isTerminated())
+            builder_.buildBranch(exitLabel);
+
+        if (!arm.pattern) break; // wildcard was last, no next block needed
+        builder_.setBlock(builder_.addBlock(nextLabel));
+    }
+
+    // Ensure we land in exit block
+    if (!builder_.isTerminated())
+        builder_.buildBranch(exitLabel);
+    builder_.setBlock(builder_.addBlock(exitLabel));
+}
+
+void IRGen::visit(ArrayLiteralExpr& e) {
+    // Allocate a slot for each element and store it; return the slot of element 0
+    // as a representative register. Full heap allocation deferred to runtime.
+    RegID firstSlot = 0;
+    for (std::size_t i = 0; i < e.elements().size(); ++i) {
+        const_cast<Expr&>(*e.elements()[i]).accept(*this);
+        std::string slotName = "__arr_" + std::to_string(i);
+        RegID slot = builder_.buildAlloca(slotName);
+        builder_.buildStore(lastReg_, slot);
+        if (i == 0) firstSlot = slot;
+    }
+    lastReg_ = firstSlot;
+}
+
 void IRGen::visit(ForStmt& s) {
     RegID slot = builder_.buildAlloca(s.variable());
     varSlots_[s.variable()] = slot;

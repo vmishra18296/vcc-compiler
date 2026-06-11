@@ -195,6 +195,20 @@ void TypeChecker::visit(VloopStmt& s) {
     const_cast<Stmt&>(s.body()).accept(*this);
 }
 
+void TypeChecker::visit(MatchStmt& s) {
+    const_cast<Expr&>(s.subject()).accept(*this);
+    for (auto& arm : s.arms()) {
+        if (arm.pattern) const_cast<Expr&>(*arm.pattern).accept(*this);
+        const_cast<Stmt&>(*arm.body).accept(*this);
+    }
+}
+
+void TypeChecker::visit(ArrayLiteralExpr& e) {
+    for (auto& elem : e.elements())
+        const_cast<Expr&>(*elem).accept(*this);
+    setExprType("array");
+}
+
 void TypeChecker::visit(ForStmt& s) {
     symbols_.enterScope("for");
     // Define loop variable in TC's scope (type inferred from iterable — <any> for now).

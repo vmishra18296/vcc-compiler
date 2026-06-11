@@ -103,6 +103,7 @@ private:
     std::unique_ptr<ast::WhileStmt>  parseWhileStmt();
     std::unique_ptr<ast::VloopStmt>  parseVloopStmt();
     std::unique_ptr<ast::ForStmt>    parseForStmt();
+    std::unique_ptr<ast::MatchStmt>  parseMatchStmt();
     std::unique_ptr<ast::ReturnStmt> parseReturnStmt();
 
     // ── Expressions (Pratt) ───────────────────────────────────────────────────

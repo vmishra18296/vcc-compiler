@@ -38,10 +38,13 @@ enum class TokenKind : uint16_t {
 
     // ── Keywords ─────────────────────────────────────────────────────────────
     KwFn,
+    KwFunc,    ///< func — alias for fn
     KwLet,
     KwVar,
     KwConst,
     KwIf,
+    KwEf,      ///< ef  — else-if branch
+    KwEl,      ///< el  — else branch
     KwElse,
     KwWhile,
     KwFor,
@@ -64,6 +67,7 @@ enum class TokenKind : uint16_t {
     KwBreak,
     KwContinue,
     KwMatch,
+    KwArray,   ///< array — array literal constructor
 
     // ── Arithmetic operators ──────────────────────────────────────────────────
     Plus,      ///< +

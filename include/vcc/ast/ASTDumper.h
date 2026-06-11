@@ -74,6 +74,8 @@ public:
     void visit(ForStmt&)      override;
     void visit(BreakStmt&)    override;
     void visit(ContinueStmt&) override;
+    void visit(MatchStmt&)    override;
+    void visit(ArrayLiteralExpr&) override;
 
     // ── Expressions ───────────────────────────────────────────────────────────
     void visit(BinaryExpr&)        override;

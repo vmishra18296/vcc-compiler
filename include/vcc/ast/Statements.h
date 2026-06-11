@@ -221,4 +221,32 @@ public:
     [[nodiscard]] std::string_view nodeName() const noexcept override { return "ContinueStmt"; }
 };
 
+// ─── MatchArm / MatchStmt ────────────────────────────────────────────────────
+
+/// A single arm of a match statement: pattern => body
+struct MatchArm {
+    std::unique_ptr<Expr> pattern;   ///< nullptr means wildcard '_'
+    std::unique_ptr<Stmt> body;
+};
+
+/// match expr { arm* }
+class MatchStmt : public Stmt {
+public:
+    MatchStmt(std::unique_ptr<Expr>    subject,
+              std::vector<MatchArm>    arms,
+              common::SourceRange      range = {})
+        : Stmt(range), subject_(std::move(subject)), arms_(std::move(arms)) {}
+
+    [[nodiscard]] const Expr&              subject() const noexcept { return *subject_; }
+    [[nodiscard]] const std::vector<MatchArm>& arms() const noexcept { return arms_; }
+    [[nodiscard]] std::vector<MatchArm>&   arms()    noexcept { return arms_; }
+
+    void accept(ASTVisitor& v) override { v.visit(*this); }
+    [[nodiscard]] std::string_view nodeName() const noexcept override { return "MatchStmt"; }
+
+private:
+    std::unique_ptr<Expr>  subject_;
+    std::vector<MatchArm>  arms_;
+};
+
 } // namespace vcc::ast

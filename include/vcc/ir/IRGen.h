@@ -67,6 +67,8 @@ public:
     void visit(ast::IfStmt&)       override;
     void visit(ast::WhileStmt&)    override;
     void visit(ast::VloopStmt&)    override;
+    void visit(ast::MatchStmt&)     override;
+    void visit(ast::ArrayLiteralExpr&) override;
     void visit(ast::ForStmt&)      override;
 
     // ── Expressions ───────────────────────────────────────────────────────────

@@ -190,6 +190,23 @@ void ASTDumper::visit(ForStmt& s) {
 void ASTDumper::visit(BreakStmt&)    { out_ << "BreakStmt\n"; }
 void ASTDumper::visit(ContinueStmt&) { out_ << "ContinueStmt\n"; }
 
+void ASTDumper::visit(MatchStmt& s) {
+    out_ << "MatchStmt\n";
+    std::vector<ASTNode*> children{ const_cast<Expr*>(&s.subject()) };
+    for (auto& arm : s.arms()) {
+        if (arm.pattern) children.push_back(arm.pattern.get());
+        children.push_back(arm.body.get());
+    }
+    printChildren(children);
+}
+
+void ASTDumper::visit(ArrayLiteralExpr& e) {
+    out_ << "ArrayLiteralExpr[" << e.elements().size() << "]\n";
+    std::vector<ASTNode*> children;
+    for (auto& elem : e.elements()) children.push_back(elem.get());
+    printChildren(children);
+}
+
 // ─── Expressions ──────────────────────────────────────────────────────────────
 
 void ASTDumper::visit(BinaryExpr& e) {

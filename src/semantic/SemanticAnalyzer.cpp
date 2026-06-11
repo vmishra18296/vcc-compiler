@@ -34,6 +34,23 @@ SemanticAnalyzer::SemanticAnalyzer(CompilerContext& ctx)
 bool SemanticAnalyzer::analyze(ModuleDecl& module) {
     const uint32_t errsBefore = ctx_.diagnostics().errorCount();
 
+    // ── Built-in functions ────────────────────────────────────────────────────
+    // Pre-declare built-ins so user code can call them without import.
+    auto declareBuiltin = [&](std::string name) {
+        Symbol s;
+        s.name       = std::move(name);
+        s.kind       = SymbolKind::Function;
+        s.returnType = "<any>";
+        s.typeName   = "<any>";
+        symbols_.define(s);
+    };
+    declareBuiltin("print");
+    declareBuiltin("println");
+    declareBuiltin("eprint");
+    declareBuiltin("eprintln");
+    declareBuiltin("len");
+    declareBuiltin("sizeof");
+
     // ── Pass 1: hoist all top-level declarations ──────────────────────────────
     // Pre-declare functions and types so forward references work.
     for (const auto& decl : module.decls()) {
@@ -204,6 +221,19 @@ void SemanticAnalyzer::visit(VloopStmt& s) {
     const_cast<Stmt&>(s.body()).accept(*this);
 }
 
+void SemanticAnalyzer::visit(MatchStmt& s) {
+    const_cast<Expr&>(s.subject()).accept(*this);
+    for (auto& arm : s.arms()) {
+        if (arm.pattern) const_cast<Expr&>(*arm.pattern).accept(*this);
+        const_cast<Stmt&>(*arm.body).accept(*this);
+    }
+}
+
+void SemanticAnalyzer::visit(ArrayLiteralExpr& e) {
+    for (auto& elem : e.elements())
+        const_cast<Expr&>(*elem).accept(*this);
+}
+
 void SemanticAnalyzer::visit(ForStmt& s) {
     // Loop variable is scoped to the for body.
     symbols_.enterScope("for");
@@ -281,7 +311,17 @@ void SemanticAnalyzer::visit(UnaryExpr& e) {
 void SemanticAnalyzer::visit(AssignExpr& e) {
     if (const auto* ident = dynamic_cast<const IdentExpr*>(&e.target())) {
         const Symbol* sym = symbols_.lookup(ident->name());
-        if (sym) {
+        if (!sym) {
+            // V language v0.1: bare assignment to undeclared name
+            // implicitly declares a mutable variable (type inference).
+            Symbol implied;
+            implied.name    = ident->name();
+            implied.kind    = SymbolKind::Variable;
+            implied.isMut   = true;
+            implied.declLoc = e.range().begin;
+            implied.typeName = "<inferred>";
+            symbols_.define(implied);
+        } else {
             if (sym->kind == SymbolKind::Constant) {
                 ctx_.diagnostics().error(e.range().begin,
                     "cannot assign to '" + ident->name() +

@@ -18,10 +18,11 @@ func main() {
 ## 2. Variables and Constants
 
 ```v
-let name = "John"      // immutable
-var age = 25           // mutable
-
-const PI = 3.1415926
+name = "John"      // act as string and can be changed size
+age = 25           // act as int 
+num=2.5 // act as float
+const name="vikas"  //act as string but size not be changed
+const PI = 3.1415926 //value can't be changed
 ```
 
 ---
@@ -86,16 +87,16 @@ a >> 1
 
 ---
 
-## 5. Conditions
+## 5. Conditions // without { ,} braces also allowed
 
 ```v
 if temp > 50 {
     print("Hot")
 }
-else if temp > 25 {
+ef temp > 25 {
     print("Warm")
 }
-else {
+el {
     print("Cold")
 }
 ```
@@ -106,41 +107,38 @@ else {
 
 ```v
 match status {
-    0 => print("OK")
-    1 => print("ERROR")
+    0 => print("FALSE")
+    1 => print("TRUE")
     _ => print("UNKNOWN")
 }
 ```
 
 ---
 
-## 7. Loops
+## 7. Loops only single loop name vloop()
 
 ```v
-for i = 0; i < 10; i++ {
-    print(i)
-}
+vloop(condition)
+logic
 
-while running {
-    update()
-}
+vloop(1) // infinite loop
 
-loop {
-    process()
-}
 ```
 
 ---
 
 ## 8. Arrays
 
-```v
-nums = [10,20,30]
+```
+array[1,2,3,4] //act as int array
+array["vikas","mishra"] //act as string array
+array['a','b'] //act as char array
 
-print(nums[0])
+i=0 ,i++
+print(i)
 
-nums.push(40)
-nums.pop()
+array.push(40)(i) //push num 40 at ith place
+//same like other vector logic in new way
 ```
 
 ---

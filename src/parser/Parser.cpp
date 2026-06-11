@@ -71,6 +71,7 @@ void Parser::synchronize() {
         if (current().is(TokenKind::Semicolon)) { advance(); return; }
         switch (current().kind) {
             case TokenKind::KwFn:
+            case TokenKind::KwFunc:
             case TokenKind::KwStruct:
             case TokenKind::KwEnum:
             case TokenKind::KwLet:
@@ -78,6 +79,8 @@ void Parser::synchronize() {
             case TokenKind::KwConst:
             case TokenKind::KwReturn:
             case TokenKind::KwIf:
+            case TokenKind::KwEf:
+            case TokenKind::KwMatch:
             case TokenKind::KwWhile:
             case TokenKind::KwVloop:
             case TokenKind::KwFor:
@@ -125,6 +128,7 @@ std::unique_ptr<Decl> Parser::parseTopLevelDecl() {
 
     switch (current().kind) {
         case TokenKind::KwFn:        advance(); return parseFunctionDecl(isPub);
+        case TokenKind::KwFunc:      advance(); return parseFunctionDecl(isPub);
         case TokenKind::KwStruct:    advance(); return parseStructDecl(isPub);
         case TokenKind::KwEnum:      advance(); return parseEnumDecl(isPub);
         case TokenKind::KwType:      advance(); return parseTypeAliasDecl(isPub);
@@ -310,6 +314,8 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
     switch (current().kind) {
         case TokenKind::LBrace:    return parseBlock();
         case TokenKind::KwIf:      advance(); return parseIfStmt();
+        case TokenKind::KwEf:      advance(); return parseIfStmt();  // bare ef — treated as if
+        case TokenKind::KwMatch:   advance(); return parseMatchStmt();
         case TokenKind::KwWhile:   advance(); return parseWhileStmt();
         case TokenKind::KwVloop:   advance(); return parseVloopStmt();
         case TokenKind::KwFor:     advance(); return parseForStmt();
@@ -336,15 +342,32 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
 
 std::unique_ptr<IfStmt> Parser::parseIfStmt() {
     const SourceLocation loc = current().location;
+    // Support both braced and brace-less bodies.
+    // Condition may be wrapped in optional parens.
+    match(TokenKind::LParen);
     auto cond = parseExpr();
-    auto then = parseBlock();
+    match(TokenKind::RParen);
+
+    // Body: braced block OR single statement
+    std::unique_ptr<Stmt> then;
+    if (check(TokenKind::LBrace)) {
+        then = parseBlock();
+    } else {
+        then = parseStmt();
+    }
+
     std::unique_ptr<Stmt> els;
-    if (match(TokenKind::KwElse)) {
-        if (check(TokenKind::KwIf)) {
-            advance();
-            els = parseIfStmt();
-        } else {
+    // Accept ef (else-if) and el (else) as well as legacy else/else if
+    if (check(TokenKind::KwEf) || (check(TokenKind::KwElse) && peek(1).kind == TokenKind::KwIf)) {
+        advance(); // consume ef / else
+        if (check(TokenKind::KwIf)) advance(); // consume optional if after else
+        els = parseIfStmt();
+    } else if (check(TokenKind::KwEl) || check(TokenKind::KwElse)) {
+        advance(); // consume el / else
+        if (check(TokenKind::LBrace)) {
             els = parseBlock();
+        } else {
+            els = parseStmt();
         }
     }
     return std::make_unique<IfStmt>(std::move(cond), std::move(then),
@@ -366,6 +389,41 @@ std::unique_ptr<VloopStmt> Parser::parseVloopStmt() {
     expect(TokenKind::RParen, "expected ')' after vloop condition");
     auto body = parseBlock();
     return std::make_unique<VloopStmt>(std::move(cond), std::move(body),
+                                       SourceRange::at(loc));
+}
+
+std::unique_ptr<MatchStmt> Parser::parseMatchStmt() {
+    // match subject { pattern => stmt  ...  _ => stmt }
+    const SourceLocation loc = current().location;
+
+    // Optional parens around subject: match(x) { } or match x { }
+    match(TokenKind::LParen);
+    auto subject = parseExpr();
+    match(TokenKind::RParen);
+
+    expect(TokenKind::LBrace, "expected '{' after match subject");
+    std::vector<MatchArm> arms;
+
+    while (!check(TokenKind::RBrace) && !isAtEnd()) {
+        MatchArm arm;
+        if (check(TokenKind::Identifier) && current().lexeme == "_") {
+            advance();                           // wildcard '_'
+            arm.pattern = nullptr;
+        } else {
+            arm.pattern = parseExpr();
+        }
+        expect(TokenKind::FatArrow, "expected '=>' in match arm");
+
+        if (check(TokenKind::LBrace)) {
+            arm.body = parseBlock();
+        } else {
+            arm.body = parseStmt();
+        }
+        match(TokenKind::Comma);  // optional trailing comma
+        arms.push_back(std::move(arm));
+    }
+    expect(TokenKind::RBrace, "expected '}' after match arms");
+    return std::make_unique<MatchStmt>(std::move(subject), std::move(arms),
                                        SourceRange::at(loc));
 }
 
@@ -583,6 +641,17 @@ std::unique_ptr<Expr> Parser::parsePrimaryExpr() {
         case TokenKind::KwNil:
             advance();
             return std::make_unique<NilLiteralExpr>(SourceRange::at(loc));
+        case TokenKind::KwArray: {
+            // array[elem, elem, ...]
+            advance(); // consume 'array'
+            expect(TokenKind::LBracket, "expected '[' after 'array'");
+            std::vector<std::unique_ptr<Expr>> elems;
+            if (!check(TokenKind::RBracket)) {
+                do { elems.push_back(parseExpr()); } while (match(TokenKind::Comma));
+            }
+            expect(TokenKind::RBracket, "expected ']' after array elements");
+            return std::make_unique<ArrayLiteralExpr>(std::move(elems), SourceRange::at(loc));
+        }
         default: break;
     }
 
@@ -663,8 +732,8 @@ std::unique_ptr<TypeNode> Parser::parseType() {
         return std::make_unique<SliceTypeNode>(std::move(elem), SourceRange::at(loc));
     }
 
-    // Function type: fn(T1, T2) -> R
-    if (match(TokenKind::KwFn)) {
+    // Function type: fn/func (T1, T2) -> R
+    if (match(TokenKind::KwFn) || match(TokenKind::KwFunc)) {
         expect(TokenKind::LParen, "expected '(' in function type");
         std::vector<std::unique_ptr<TypeNode>> params;
         if (!check(TokenKind::RParen)) {
