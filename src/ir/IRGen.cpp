@@ -180,6 +180,43 @@ void IRGen::visit(WhileStmt& s) {
 }
 
 void IRGen::visit(VloopStmt& s) {
+    // If the condition is an integer literal N, emit a counted loop:
+    //   counter = 0; while (counter < N) { body; counter++ }
+    if (auto* intCond = dynamic_cast<IntLiteralExpr*>(&const_cast<Expr&>(s.condition()))) {
+        const std::string counterSlot = builder_.newLabel("vloop_counter");
+        const std::string condLabel   = builder_.newLabel("vloop_cond");
+        const std::string bodyLabel   = builder_.newLabel("vloop_body");
+        const std::string exitLabel   = builder_.newLabel("vloop_exit");
+
+        // counter = alloca; store 0
+        RegID slot  = builder_.buildAlloca(counterSlot);
+        RegID zero  = builder_.buildInt(0);
+        builder_.buildStore(zero, slot);
+        builder_.buildBranch(condLabel);
+
+        // cond: load counter, cmp < N, condbranch
+        builder_.setBlock(builder_.addBlock(condLabel));
+        RegID cur   = builder_.buildLoad(slot);
+        RegID limit = builder_.buildInt(intCond->value());
+        RegID cmp   = builder_.buildBinOp(Opcode::CmpLt, cur, limit);
+        builder_.buildCondBranch(cmp, bodyLabel, exitLabel);
+
+        // body: run body, increment counter
+        builder_.setBlock(builder_.addBlock(bodyLabel));
+        const_cast<Stmt&>(s.body()).accept(*this);
+        if (!builder_.isTerminated()) {
+            RegID cur2 = builder_.buildLoad(slot);
+            RegID one  = builder_.buildInt(1);
+            RegID inc  = builder_.buildBinOp(Opcode::Add, cur2, one);
+            builder_.buildStore(inc, slot);
+            builder_.buildBranch(condLabel);
+        }
+
+        builder_.setBlock(builder_.addBlock(exitLabel));
+        return;
+    }
+
+    // Otherwise: treat condition as a boolean while-loop
     const std::string condLabel = builder_.newLabel("vloop_cond");
     const std::string bodyLabel = builder_.newLabel("vloop_body");
     const std::string exitLabel = builder_.newLabel("vloop_exit");
