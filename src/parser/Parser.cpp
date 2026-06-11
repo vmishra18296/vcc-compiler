@@ -122,7 +122,22 @@ std::unique_ptr<ModuleDecl> Parser::parse() {
         if (isDecl) {
             try {
                 auto decl = parseTopLevelDecl();
-                if (decl) module->addDecl(std::move(decl));
+                if (decl) {
+                    // Auto-call every user-defined function (except main) at the
+                    // point it is defined, in source order.
+                    if (auto* fn = dynamic_cast<FunctionDecl*>(decl.get())) {
+                        if (fn->name() != "main") {
+                            auto callee = std::make_unique<IdentExpr>(fn->name(), SourceRange{});
+                            auto call = std::make_unique<CallExpr>(
+                                std::move(callee),
+                                std::vector<std::unique_ptr<Expr>>{},
+                                SourceRange{});
+                            implicitMain.push_back(
+                                std::make_unique<ExprStmt>(std::move(call), SourceRange{}));
+                        }
+                    }
+                    module->addDecl(std::move(decl));
+                }
             } catch (...) {
                 ctx_.diagnostics().error(current().location,
                     "parse error; attempting recovery");

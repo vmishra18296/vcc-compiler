@@ -412,10 +412,11 @@ struct FunctionLowering {
             for (const auto& op : instr.operands)
                 args.push_back(resolve(op));
 
+            const bool isVoid = callee->getReturnType()->isVoidTy();
             const std::string callName =
-                (instr.dest != ir::NoReg) ? "call" : "";
+                (!isVoid && instr.dest != ir::NoReg) ? "call" : "";
             CallInst* ci = builder.CreateCall(callee, args, callName);
-            if (instr.dest != ir::NoReg) regs[instr.dest] = ci;
+            if (!isVoid && instr.dest != ir::NoReg) regs[instr.dest] = ci;
             break;
         }
 
