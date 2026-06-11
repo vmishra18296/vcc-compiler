@@ -365,6 +365,46 @@ struct FunctionLowering {
         // ── Calls ─────────────────────────────────────────────────────────────
 
         case ir::Opcode::Call: {
+            // ── Built-in: exit ────────────────────────────────────────────────
+            // exit        → exit(0)
+            // exit(code)  → exit(code)
+            if (instr.label == "exit" || instr.label == "escape") {
+                FunctionCallee exitFn = mod.getOrInsertFunction(
+                    "exit",
+                    FunctionType::get(voidTy(), {Type::getInt32Ty(ctx)},
+                                      /*isVarArg=*/false));
+                Value* code;
+                if (!instr.operands.empty()) {
+                    code = resolve(instr.operands[0]);
+                    if (code->getType() != Type::getInt32Ty(ctx))
+                        code = builder.CreateTrunc(code, Type::getInt32Ty(ctx));
+                } else {
+                    // exit → 0, escape → 1
+                    code = ConstantInt::get(Type::getInt32Ty(ctx),
+                                            instr.label == "escape" ? 1 : 0);
+                }
+                builder.CreateCall(exitFn, {code});
+                builder.CreateUnreachable();
+                break;
+            }
+
+            // ── Built-in: wait(ms) ────────────────────────────────────────────
+            // Lowers to usleep(ms * 1000)
+            if (instr.label == "wait") {
+                FunctionCallee usleepFn = mod.getOrInsertFunction(
+                    "usleep",
+                    FunctionType::get(Type::getInt32Ty(ctx),
+                                      {Type::getInt32Ty(ctx)}, /*isVarArg=*/false));
+                Value* ms = instr.operands.empty()
+                    ? ConstantInt::get(i64Ty(), 0)
+                    : resolve(instr.operands[0]);
+                Value* us = builder.CreateMul(
+                    builder.CreateTrunc(ms, Type::getInt32Ty(ctx)),
+                    ConstantInt::get(Type::getInt32Ty(ctx), 1000), "us");
+                builder.CreateCall(usleepFn, {us});
+                break;
+            }
+
             // ── Built-in: print / println ─────────────────────────────────────
             // Map to printf with a format string chosen by argument type.
             if ((instr.label == "print" || instr.label == "println") &&

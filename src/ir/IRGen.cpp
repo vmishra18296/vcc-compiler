@@ -3,6 +3,7 @@
 #include "vcc/ast/Statements.h"
 
 #include <cassert>
+#include <unordered_set>
 
 namespace vcc::ir {
 
@@ -329,6 +330,13 @@ void IRGen::visit(NilLiteralExpr&)      { lastReg_ = builder_.buildNil(); }
 // `x` where x has no slot         →  tN = load x   (symbolic / global)
 
 void IRGen::visit(IdentExpr& e) {
+    // Bare use of a zero-arg built-in (exit, escape, wait) → emit a call.
+    static const std::unordered_set<std::string> kZeroArgBuiltins{
+        "exit", "escape", "wait"};
+    if (kZeroArgBuiltins.count(e.name())) {
+        lastReg_ = builder_.buildCall(e.name(), {});
+        return;
+    }
     auto it = varSlots_.find(e.name());
     if (it == varSlots_.end())
         lastReg_ = builder_.buildLoadNamed(e.name());

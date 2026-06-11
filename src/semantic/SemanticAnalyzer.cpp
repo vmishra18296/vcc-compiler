@@ -50,6 +50,9 @@ bool SemanticAnalyzer::analyze(ModuleDecl& module) {
     declareBuiltin("eprintln");
     declareBuiltin("len");
     declareBuiltin("sizeof");
+    declareBuiltin("exit");    // exit(code=0)  — terminate program
+    declareBuiltin("escape");  // escape(code=1) — terminate with error
+    declareBuiltin("wait");    // wait(ms)       — sleep milliseconds
 
     // ── Pass 1: hoist all top-level declarations ──────────────────────────────
     // Pre-declare functions and types so forward references work.
