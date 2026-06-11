@@ -169,29 +169,20 @@ void TypeChecker::visit(ReturnStmt& r) {
 
 void TypeChecker::visit(IfStmt& s) {
     const_cast<Expr&>(s.condition()).accept(*this);
-    if (exprType() != "bool" && exprType() != "<any>" && !exprType().empty()) {
-        ctx_.diagnostics().warning(s.condition().range().begin,
-            "if condition should be 'bool', got '" + exprType() + "'");
-    }
+    // V language: any type is valid as a condition (truthy/falsy)
     const_cast<Stmt&>(s.thenBranch()).accept(*this);
     if (s.elseBranch()) const_cast<Stmt*>(s.elseBranch())->accept(*this);
 }
 
 void TypeChecker::visit(WhileStmt& s) {
     const_cast<Expr&>(s.condition()).accept(*this);
-    if (exprType() != "bool" && exprType() != "<any>" && !exprType().empty()) {
-        ctx_.diagnostics().warning(s.condition().range().begin,
-            "while condition should be 'bool', got '" + exprType() + "'");
-    }
+    // V language: any type is valid as a condition
     const_cast<Stmt&>(s.body()).accept(*this);
 }
 
 void TypeChecker::visit(VloopStmt& s) {
     const_cast<Expr&>(s.condition()).accept(*this);
-    if (exprType() != "bool" && exprType() != "<any>" && !exprType().empty()) {
-        ctx_.diagnostics().warning(s.condition().range().begin,
-            "vloop condition should be 'bool', got '" + exprType() + "'");
-    }
+    // V language: any type is valid as a condition
     const_cast<Stmt&>(s.body()).accept(*this);
 }
 
