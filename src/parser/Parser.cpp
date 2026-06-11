@@ -215,7 +215,24 @@ std::unique_ptr<FunctionDecl> Parser::parseFunctionDecl(bool isPub) {
         returnType = parseType();
     }
 
-    auto body = parseBlock();
+    std::unique_ptr<BlockStmt> body;
+    if (check(TokenKind::LBrace)) {
+        body = parseBlock();
+    } else {
+        // Brace-less function: collect statements until next decl keyword or EOF
+        std::vector<std::unique_ptr<Stmt>> stmts;
+        while (!isAtEnd()) {
+            TokenKind k = current().kind;
+            if (k == TokenKind::KwFn || k == TokenKind::KwFun ||
+                k == TokenKind::KwPub || k == TokenKind::KwStruct ||
+                k == TokenKind::KwEnum || k == TokenKind::KwType ||
+                k == TokenKind::KwImport || k == TokenKind::KwModule)
+                break;
+            auto s = parseStmt();
+            if (s) stmts.push_back(std::move(s));
+        }
+        body = std::make_unique<BlockStmt>(std::move(stmts));
+    }
     const SourceLocation end = current().location;
 
     return std::make_unique<FunctionDecl>(
@@ -422,7 +439,16 @@ std::unique_ptr<VloopStmt> Parser::parseVloopStmt() {
     expect(TokenKind::LParen, "expected '(' after 'vloop'");
     auto cond = parseExpr();
     expect(TokenKind::RParen, "expected ')' after vloop condition");
-    auto body = parseBlock();
+    std::unique_ptr<BlockStmt> body;
+    if (check(TokenKind::LBrace)) {
+        body = parseBlock();
+    } else {
+        // Brace-less: single statement body
+        auto stmt = parseStmt();
+        std::vector<std::unique_ptr<Stmt>> stmts;
+        if (stmt) stmts.push_back(std::move(stmt));
+        body = std::make_unique<BlockStmt>(std::move(stmts));
+    }
     return std::make_unique<VloopStmt>(std::move(cond), std::move(body),
                                        SourceRange::at(loc));
 }
