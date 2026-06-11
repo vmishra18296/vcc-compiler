@@ -1,0 +1,54 @@
+# Build output
+build/
+cmake-build-*/
+out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_CPack_Packages/
+
+# Compiled binaries and object files
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.exe
+
+# LLVM / compiler output
+*.ll
+*.bc
+*.s
+*.out
+a.out
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Clangd / compile commands
+compile_commands.json
+.clangd/
+.cache/
+
+# Coverage reports
+*.gcda
+*.gcno
+*.lcov
+coverage/
+coverage_report/
+
+# Test artifacts
+Testing/
+test_executable
+
+# Dependency fetch cache (CMake FetchContent)
+_deps/
