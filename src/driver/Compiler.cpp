@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 #include <unistd.h>
 
 namespace vcc::driver {
@@ -72,6 +73,19 @@ void printTokenTable(const std::vector<common::Token>& tokens) {
                   << std::setw(kValueW) << tok.lexeme
                   << loc << '\n';
     }
+}
+
+/// Derive the binary output name from the source path and -o option.
+/// test.v  → "test"   (same directory)
+/// -o foo  → "foo"
+static std::filesystem::path resolveBinaryPath(
+        const std::filesystem::path& src,
+        const common::CompilerOptions& opts) {
+    const auto& o = opts.outputFile;
+    if (o != std::filesystem::path{"a.out"})
+        return o;
+    // Strip the source extension: test.v → test
+    return src.stem();
 }
 
 /// Resolve the LLVM IR output path from CompilerOptions.
@@ -165,18 +179,51 @@ bool Compiler::compileFile(const std::filesystem::path& path) {
 
     // -- Stage 6: LLVM lowering -----------------------------------------------
     // Runs when --emit-llvm is passed explicitly OR when no inspection flag is
-    // active (i.e. the default "vcc file.v" invocation produces output.ll).
+    // active (i.e. the default "vcc file.v" invocation produces a binary).
 
-    const auto outPath = resolveOutputPath(opts);
-    logStage(opts, 6, kStages, "LLVM lowering -> " + outPath.string());
+    // When --emit-llvm: just write the .ll file and stop.
+    if (opts.emitLLVM) {
+        const auto outPath = resolveOutputPath(opts);
+        logStage(opts, 6, kStages, "LLVM lowering -> " + outPath.string());
+        codegen::LLVMCodeGenerator llvmGen;
+        const bool ok = llvmGen.emitIR(*irModule, outPath);
+        if (ok) std::cout << "vcc: wrote '" << outPath.string() << "'\n";
+        return ok;
+    }
+
+    // Default: emit .ll, compile with llc to .o, link with gcc to binary.
+    const auto binPath = resolveBinaryPath(path, opts);
+    const auto llPath  = std::filesystem::path{binPath}.replace_extension(".ll");
+    const auto objPath = std::filesystem::path{binPath}.replace_extension(".o");
+
+    logStage(opts, 6, kStages, "generating binary '" + binPath.string() + "'");
 
     codegen::LLVMCodeGenerator llvmGen;
-    const bool ok = llvmGen.emitIR(*irModule, outPath);
+    if (!llvmGen.emitIR(*irModule, llPath)) return false;
 
-    if (ok)
-        std::cout << "vcc: wrote '" << outPath.string() << "'\n";
+    // llc: .ll -> .o  (PIC relocation so gcc -pie works)
+    const std::string llcCmd =
+        "/usr/lib/llvm-18/bin/llc --relocation-model=pic -filetype=obj -o " +
+        objPath.string() + " " + llPath.string();
+    if (std::system(llcCmd.c_str()) != 0) {
+        ctx_.diagnostics().error({}, "vcc: llc failed");
+        return false;
+    }
 
-    return ok;
+    // gcc: .o -> binary
+    const std::string gccCmd =
+        "gcc -pie -o " + binPath.string() + " " + objPath.string() + " -lm 2>&1";
+    if (std::system(gccCmd.c_str()) != 0) {
+        ctx_.diagnostics().error({}, "vcc: linker failed");
+        return false;
+    }
+
+    // Clean up intermediate files
+    std::filesystem::remove(llPath);
+    std::filesystem::remove(objPath);
+
+    std::cout << "vcc: built '" << binPath.string() << "'\n";
+    return true;
 }
 
 } // namespace vcc::driver

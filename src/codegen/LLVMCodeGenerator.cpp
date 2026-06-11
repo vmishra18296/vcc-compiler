@@ -62,9 +62,10 @@ struct FunctionLowering {
 
     // ── Type helpers ──────────────────────────────────────────────────────────
 
-    Type* i64Ty()  const { return Type::getInt64Ty(ctx);  }
-    Type* i1Ty()   const { return Type::getInt1Ty(ctx);   }
-    Type* voidTy() const { return Type::getVoidTy(ctx);   }
+    Type* i64Ty()   const { return Type::getInt64Ty(ctx);  }
+    Type* i1Ty()    const { return Type::getInt1Ty(ctx);   }
+    Type* voidTy()  const { return Type::getVoidTy(ctx);   }
+    Type* i8PtrTy() const { return PointerType::getUnqual(Type::getInt8Ty(ctx)); }
 
     Value* zeroI64() const {
         return ConstantInt::get(Type::getInt64Ty(ctx), 0, /*isSigned=*/true);
@@ -152,9 +153,16 @@ struct FunctionLowering {
                 return ConstantFP::get(Type::getDoubleTy(ctx), op.floatVal);
             case ir::Operand::Kind::BoolImm:
                 return ConstantInt::get(i64Ty(), op.intVal != 0 ? 1 : 0);
-            case ir::Operand::Kind::StringRef:
-                // Phase 1: string not yet lowered — produce i64 0 as placeholder.
-                return ConstantInt::get(i64Ty(), 0);
+            case ir::Operand::Kind::StringRef: {
+                // Create a global constant string and return i8* GEP.
+                Constant* strConst = ConstantDataArray::getString(ctx, op.strVal, /*AddNull=*/true);
+                auto* gv = new GlobalVariable(
+                    mod, strConst->getType(), /*isConstant=*/true,
+                    GlobalValue::PrivateLinkage, strConst, ".str");
+                gv->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
+                Value* zero = ConstantInt::get(Type::getInt32Ty(ctx), 0);
+                return builder.CreateInBoundsGEP(strConst->getType(), gv, {zero, zero}, "strptr");
+            }
         }
         return UndefValue::get(i64Ty());
     }
@@ -357,6 +365,38 @@ struct FunctionLowering {
         // ── Calls ─────────────────────────────────────────────────────────────
 
         case ir::Opcode::Call: {
+            // ── Built-in: print / println ─────────────────────────────────────
+            // Map to printf with a format string chosen by argument type.
+            if ((instr.label == "print" || instr.label == "println") &&
+                instr.operands.size() == 1) {
+                // Declare printf as variadic i32 (i8*, ...)
+                FunctionCallee printfFn = mod.getOrInsertFunction(
+                    "printf",
+                    FunctionType::get(Type::getInt32Ty(ctx),
+                                      {i8PtrTy()}, /*isVarArg=*/true));
+
+                Value* arg = resolve(instr.operands[0]);
+                const bool isStr = arg->getType()->isPointerTy();
+
+                // Choose format string
+                const std::string fmtStr = isStr ? "%s\n" : "%lld\n";
+                Constant* fmtConst = ConstantDataArray::getString(ctx, fmtStr, true);
+                auto* fmtGV = new GlobalVariable(
+                    mod, fmtConst->getType(), true,
+                    GlobalValue::PrivateLinkage, fmtConst, ".fmt");
+                fmtGV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
+                Value* zero = ConstantInt::get(Type::getInt32Ty(ctx), 0);
+                Value* fmtPtr = builder.CreateInBoundsGEP(
+                    fmtConst->getType(), fmtGV, {zero, zero}, "fmtptr");
+
+                // Cast integer arg to match printf expectation
+                if (!isStr && arg->getType() != i64Ty())
+                    arg = builder.CreateSExt(arg, i64Ty(), "ext");
+
+                builder.CreateCall(printfFn, {fmtPtr, arg});
+                break;
+            }
+
             // Find or create a declaration for the callee.
             Function* callee = mod.getFunction(instr.label);
             if (!callee) {
