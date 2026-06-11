@@ -1,0 +1,178 @@
+#include "vcc/semantic/SemanticAnalyzer.h"
+
+#include "vcc/ast/Statements.h"
+
+namespace vcc::semantic {
+
+using namespace vcc::ast;
+using namespace vcc::common;
+
+SemanticAnalyzer::SemanticAnalyzer(CompilerContext& ctx)
+    : ctx_(ctx) {}
+
+bool SemanticAnalyzer::analyze(ModuleDecl& module) {
+    const uint32_t errsBefore = ctx_.diagnostics().errorCount();
+
+    // ── Pass 1: collect all top-level declarations ────────────────────────────
+    // Pre-declare functions and types so that forward references work.
+    for (const auto& decl : module.decls()) {
+        if (auto* fn = dynamic_cast<FunctionDecl*>(decl.get())) {
+            Symbol sym{fn->name(), SymbolKind::Function, false, fn->isPub()};
+            if (!symbols_.define(sym)) {
+                ctx_.diagnostics().error(fn->range().begin,
+                    "redefinition of '" + fn->name() + "'");
+            }
+        } else if (auto* st = dynamic_cast<StructDecl*>(decl.get())) {
+            Symbol sym{st->name(), SymbolKind::Type, false, st->isPub()};
+            if (!symbols_.define(sym)) {
+                ctx_.diagnostics().error(st->range().begin,
+                    "redefinition of type '" + st->name() + "'");
+            }
+        } else if (auto* en = dynamic_cast<EnumDecl*>(decl.get())) {
+            Symbol sym{en->name(), SymbolKind::Type, false, en->isPub()};
+            if (!symbols_.define(sym)) {
+                ctx_.diagnostics().error(en->range().begin,
+                    "redefinition of type '" + en->name() + "'");
+            }
+        }
+    }
+
+    // ── Pass 2: name resolution (full traversal) ─────────────────────────────
+    module.accept(*this);
+
+    // ── Pass 3: type checking ─────────────────────────────────────────────────
+    TypeChecker tc(ctx_, symbols_);
+    tc.check(module);
+
+    return ctx_.diagnostics().errorCount() == errsBefore;
+}
+
+// ─── Module ───────────────────────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(ModuleDecl& m) {
+    for (auto& d : m.decls()) d->accept(*this);
+}
+
+// ─── Import ───────────────────────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(ImportDecl& imp) {
+    const std::string name = imp.alias().value_or(imp.path());
+    Symbol sym{name, SymbolKind::Module, false, false};
+    if (!symbols_.define(sym)) {
+        ctx_.diagnostics().warning(imp.range().begin,
+            "duplicate import '" + imp.path() + "'");
+    }
+}
+
+// ─── Function ─────────────────────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(FunctionDecl& fn) {
+    currentFunction_ = fn.name();
+
+    symbols_.enterScope("fn:" + fn.name());
+    for (auto& p : fn.params()) p->accept(*this);
+    if (fn.body()) const_cast<Stmt*>(fn.body())->accept(*this);
+    symbols_.leaveScope();
+
+    currentFunction_.clear();
+}
+
+void SemanticAnalyzer::visit(ParameterDecl& p) {
+    Symbol sym{p.name(), SymbolKind::Parameter, p.isMut(), false};
+    if (!symbols_.define(sym)) {
+        ctx_.diagnostics().error(p.range().begin,
+            "duplicate parameter name '" + p.name() + "'");
+    }
+}
+
+// ─── Struct / Enum / Type alias ───────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(StructDecl&)    { /* fields checked by TypeChecker */ }
+void SemanticAnalyzer::visit(EnumDecl&)      { /* variants checked by TypeChecker */ }
+void SemanticAnalyzer::visit(TypeAliasDecl&) { /* aliased type checked by TypeChecker */ }
+
+// ─── Variable declarations ───────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(VarDecl& v) {
+    if (v.initializer()) const_cast<Expr*>(v.initializer())->accept(*this);
+
+    SymbolKind kind = (v.varKind() == VarKind::Const) ? SymbolKind::Constant
+                                                       : SymbolKind::Variable;
+    bool isMut = (v.varKind() == VarKind::Var);
+    Symbol sym{v.name(), kind, isMut, false};
+    if (!symbols_.define(sym)) {
+        ctx_.diagnostics().error(v.range().begin,
+            "redefinition of '" + v.name() + "'");
+    }
+}
+
+// ─── Statements ───────────────────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(BlockStmt& b) {
+    symbols_.enterScope("block");
+    for (auto& s : b.stmts()) s->accept(*this);
+    symbols_.leaveScope();
+}
+
+void SemanticAnalyzer::visit(IfStmt& s) {
+    const_cast<Expr&>(s.condition()).accept(*this);
+    const_cast<Stmt&>(s.thenBranch()).accept(*this);
+    if (s.elseBranch()) const_cast<Stmt*>(s.elseBranch())->accept(*this);
+}
+
+void SemanticAnalyzer::visit(WhileStmt& s) {
+    const_cast<Expr&>(s.condition()).accept(*this);
+    const_cast<Stmt&>(s.body()).accept(*this);
+}
+
+void SemanticAnalyzer::visit(ForStmt& s) {
+    symbols_.enterScope("for");
+    Symbol loopVar{s.variable(), SymbolKind::Variable, false, false};
+    symbols_.define(loopVar);
+    const_cast<Expr&>(s.iterable()).accept(*this);
+    const_cast<Stmt&>(s.body()).accept(*this);
+    symbols_.leaveScope();
+}
+
+void SemanticAnalyzer::visit(ReturnStmt& s) {
+    if (s.value()) const_cast<Expr*>(s.value())->accept(*this);
+}
+
+void SemanticAnalyzer::visit(ExprStmt& s) {
+    s.expr().accept(*this);
+}
+
+// ─── Expressions ─────────────────────────────────────────────────────────────
+
+void SemanticAnalyzer::visit(IdentExpr& e) {
+    if (!symbols_.lookup(e.name())) {
+        ctx_.diagnostics().error(e.range().begin,
+            "use of undeclared identifier '" + e.name() + "'");
+    }
+}
+
+void SemanticAnalyzer::visit(CallExpr& e) {
+    const_cast<Expr&>(e.callee()).accept(*this);
+    for (auto& arg : e.args()) const_cast<Expr&>(*arg).accept(*this);
+}
+
+void SemanticAnalyzer::visit(BinaryExpr& e) {
+    e.lhs().accept(*this);
+    e.rhs().accept(*this);
+}
+
+void SemanticAnalyzer::visit(UnaryExpr& e) {
+    e.operand().accept(*this);
+}
+
+void SemanticAnalyzer::visit(AssignExpr& e) {
+    const_cast<Expr&>(e.target()).accept(*this);
+    const_cast<Expr&>(e.value()).accept(*this);
+}
+
+void SemanticAnalyzer::visit(MemberExpr& e) {
+    const_cast<Expr&>(e.object()).accept(*this);
+    // Future: verify that the field exists in the resolved struct type.
+}
+
+} // namespace vcc::semantic

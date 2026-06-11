@@ -1,0 +1,538 @@
+#phase 0
+###########################################
+I am building a production-quality compiler called VCC (V Compiler Collection) for my own programming language called V.
+
+Requirements:
+
+Language implementation:
+- C++20
+- Linux
+- CMake
+- LLVM backend (future phase)
+
+Create a complete compiler project structure.
+
+Folder layout:
+
+vcc/
+├── src/
+│   ├── lexer/
+│   ├── parser/
+│   ├── ast/
+│   ├── semantic/
+│   ├── ir/
+│   ├── codegen/
+│   ├── common/
+│   └── driver/
+│
+├── include/
+│
+├── tests/
+├── examples/
+├── docs/
+├── tools/
+│
+├── CMakeLists.txt
+└── README.md
+
+Requirements:
+- Use modern C++20
+- Follow SOLID principles
+- Separate headers and implementation files
+- Add namespaces
+- Create starter classes for every module
+- Add comments explaining future responsibilities
+
+Generate complete code.
+
+######################################################
+#phase 1
+Design a programming language named V.
+
+Features:
+- int
+- float
+- bool
+- string
+
+Keywords:
+- let
+- fn
+- return
+- if
+- else
+- while
+- for
+
+Operators:
++ - * / % == != < > <= >= && ||
+
+Create:
+
+1. Complete grammar.md
+2. syntax.md
+3. examples
+
+Use EBNF notation.
+
+Provide a language specification document suitable for compiler implementation.
+
+#####################################################
+#phase 2
+Implement the lexer module for VCC.
+
+Requirements:
+
+Input:
+Source code string
+
+Output:
+Vector<Token>
+
+Create:
+
+enum class TokenType
+
+Support:
+- identifiers
+- integers
+- floats
+- strings
+- keywords
+- operators
+- punctuation
+
+Implement:
+
+class Lexer
+{
+public:
+    explicit Lexer(const std::string& source);
+
+    Token nextToken();
+    std::vector<Token> tokenize();
+};
+
+Add:
+- line number tracking
+- column tracking
+- lexer error reporting
+
+Provide complete code with unit tests.
+
+
+Add a compiler option:
+
+vcc sample.v --tokens
+
+Requirements:
+- Run lexer only
+- Print all tokens
+- Show token type
+- Show value
+- Show line and column
+
+Example output:
+
+LET          let
+IDENTIFIER   x
+ASSIGN       =
+INTEGER      100
+
+Generate complete implementation.
+
+####################################################
+Design a complete AST hierarchy for VCC.
+
+Requirements:
+
+Base nodes:
+
+Node
+Statement
+Expression
+
+Derived nodes:
+
+Program
+FunctionDecl
+VariableDecl
+BlockStmt
+IfStmt
+WhileStmt
+ForStmt
+ReturnStmt
+
+LiteralExpr
+IdentifierExpr
+UnaryExpr
+BinaryExpr
+CallExpr
+
+Requirements:
+- Visitor pattern
+- Smart pointers
+- Source location information
+
+Generate complete header and cpp files.
+
+######################################################
+Implement a Pratt parser for VCC.
+
+Requirements:
+
+Supported expressions:
+
+1 + 2 * 3
+(a+b)*c
+x==y
+x&&y
+
+Support operator precedence.
+
+Generate:
+
+class Parser
+
+Methods:
+
+parseProgram()
+parseStatement()
+parseExpression()
+
+Return AST nodes.
+
+Provide complete implementation.
+
+####################################################
+Implement AST visualization.
+
+Command:
+
+vcc sample.v --ast
+
+Print tree format:
+
+Program
+ └── Function
+      └── Block
+           └── VariableDecl
+                └── BinaryExpr(+)
+
+Use Visitor pattern.
+
+Generate complete code.
+
+
+Implement semantic symbol tables.
+
+Requirements:
+
+Support:
+
+- Variables
+- Functions
+- Nested scopes
+
+Classes:
+
+Symbol
+VariableSymbol
+FunctionSymbol
+
+Scope
+
+Methods:
+
+enterScope()
+exitScope()
+define()
+lookup()
+
+Use unordered_map.
+
+Provide complete implementation.
+
+###################################################
+Implement semantic analysis for VCC.
+
+Checks:
+
+1. Variable declared before use
+2. Duplicate variable declarations
+3. Type checking
+4. Function existence
+5. Return statement validation
+6. Scope validation
+
+Create:
+
+SemanticAnalyzer
+
+Visitor-based traversal.
+
+Output detailed compiler diagnostics.
+
+Generate complete implementation.
+
+#####################################################
+Implement professional compiler diagnostics.
+
+Requirements:
+
+error:
+warning:
+note:
+
+Example:
+
+main.v:12:5
+error: undefined variable 'count'
+
+Use ANSI colors.
+
+Create:
+
+DiagnosticEngine
+
+Generate complete implementation.
+
+############################################################
+Design a custom intermediate representation for VCC.
+
+Requirements:
+
+Instructions:
+
+Load
+Store
+Add
+Sub
+Mul
+Div
+Jump
+Branch
+Call
+Return
+
+Example:
+
+t1 = load x
+t2 = load y
+t3 = add t1 t2
+store t3 z
+
+Create IR classes.
+
+Generate complete implementation.
+
+#############################################################
+Design a custom intermediate representation for VCC.
+
+Requirements:
+
+Instructions:
+
+Load
+Store
+Add
+Sub
+Mul
+Div
+Jump
+Branch
+Call
+Return
+
+Example:
+
+t1 = load x
+t2 = load y
+t3 = add t1 t2
+store t3 z
+
+Create IR classes.
+
+Generate complete implementation.
+#################################################################
+
+Implement AST -> IR lowering.
+
+Requirements:
+
+Convert:
+
+let z = x + y;
+
+Into:
+
+t1 = load x
+t2 = load y
+t3 = add t1 t2
+store t3 z
+
+Use visitor pattern.
+
+Generate complete implementation.
+###########################################
+
+Integrate LLVM into VCC.
+
+Requirements:
+
+Generate LLVM IR from custom IR.
+
+Support:
+
+- integers
+- arithmetic
+- functions
+- returns
+
+Create:
+
+LLVMCodeGenerator
+
+Output:
+
+output.ll
+
+Use LLVM 18 APIs.
+
+Generate complete code and CMake integration.
+
+####################################################
+
+Implement compiler driver.
+
+Commands:
+
+vcc file.v
+
+vcc file.v --tokens
+
+vcc file.v --ast
+
+vcc file.v --ir
+
+vcc file.v --emit-llvm
+
+Compiler pipeline:
+
+Source
+→ Lexer
+→ Parser
+→ AST
+→ Semantic Analysis
+→ IR
+→ LLVM IR
+
+Generate complete implementation.
+
+
+################################################
+Implement optimization passes.
+
+Passes:
+
+Constant Folding
+Dead Code Elimination
+Constant Propagation
+
+Example:
+
+2 + 3
+
+becomes
+
+5
+
+Design pass framework.
+
+Generate complete implementation.
+#######################################################
+
+Create a roadmap to make V language self-hosting.
+
+Current:
+V language compiled by C++ VCC
+
+Goal:
+VCC rewritten in V
+
+Provide:
+- milestones
+- prerequisites
+- architecture changes
+- bootstrap strategy
+
+####################################################
+git commit -m "Phase 1 Lexer complete"
+git commit -m "Phase 2 Parser complete"
+git commit -m "Phase 3 Semantic Analysis complete"
+
+#########################################################
+I am designing a new programming language called V.
+
+Language rules:
+
+1. Function declaration:
+   fn function_name(arguments)
+   {
+       statements
+       return value
+   }
+
+2. Functions may be defined anywhere in the file.
+   A function can call another function before its definition.
+
+3. No semicolon required.
+
+4. Variable declaration:
+   let x = 10
+
+5. Conditions:
+   if(condition)
+   {
+   }
+   else
+   {
+   }
+
+6. Loop syntax:
+   vloop(condition)
+   {
+   }
+
+7. Operators:
+   + - * / %
+   < > <= >= == !=
+   << >> & | ^ ~
+   && || !
+
+8. Comments:
+   # single line
+
+9. Built-in types:
+   int
+   float
+   bool
+   string
+
+10. Compiler name:
+    VCC
+
+Create:
+- Formal grammar (EBNF)
+- Token definitions
+- AST hierarchy
+- Recursive descent parser design
+- Semantic analysis design
+- Symbol table design
+- LLVM backend architecture
+- Complete folder structure
+
+Use C++20 and CMake.
+Generate implementation plan for version 0.1.
+
+####################################################

@@ -1,0 +1,14 @@
+git clone git@github.com:vmishra18296/vcc-compiler.git
+
+echo "# vcc-compiler" >> README.md
+git init
+git add README.md
+git commit -m "first commit to add README file"
+git branch -M main
+git remote add origin git@github.com:vmishra18296/vcc-compiler.git
+git push -u origin main
+
+git remote add origin git@github.com:vmishra18296/vcc-compiler.git
+git branch -M main
+git push -u origin main
+
