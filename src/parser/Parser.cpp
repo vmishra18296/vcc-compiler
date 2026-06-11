@@ -125,8 +125,11 @@ std::unique_ptr<ModuleDecl> Parser::parse() {
                 if (decl) {
                     // Auto-call every user-defined function (except main) at the
                     // point it is defined, in source order.
-                    // Only applies in scripting mode (module main).
-                    if (moduleName == "main") {
+                    // Scripting mode: module main  OR  bare top-level statements
+                    // already seen (implicitMain is non-empty).
+                    const bool scriptingMode =
+                        (moduleName == "main") || !implicitMain.empty();
+                    if (scriptingMode) {
                     if (auto* fn = dynamic_cast<FunctionDecl*>(decl.get())) {
                         if (fn->name() != "main") {
                             auto callee = std::make_unique<IdentExpr>(fn->name(), SourceRange{});
