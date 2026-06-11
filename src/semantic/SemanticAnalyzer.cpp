@@ -284,8 +284,10 @@ void SemanticAnalyzer::visit(CallExpr& e) {
             ctx_.diagnostics().error(e.callee().range().begin,
                 "'" + ident->name() + "' is not a function");
         } else {
-            // Argument-count check against the pre-declared signature.
-            if (sym->paramTypes.size() != e.args().size()) {
+            // Skip arg-count check for built-ins (variadic / typeName == "<any>")
+            // and for calls to functions whose signature isn't fully known yet.
+            if (sym->typeName != "<any>" && !sym->paramTypes.empty() &&
+                sym->paramTypes.size() != e.args().size()) {
                 ctx_.diagnostics().error(e.range().begin,
                     "wrong number of arguments to '" + ident->name() +
                     "': expected " + std::to_string(sym->paramTypes.size()) +
