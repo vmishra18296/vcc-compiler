@@ -106,16 +106,51 @@ std::unique_ptr<ModuleDecl> Parser::parse() {
 
     auto module = std::make_unique<ModuleDecl>(moduleName);
 
+    // Top-level statements (outside any fun) are collected here and wrapped
+    // into a synthetic  fun main() { … }  at end of file.
+    std::vector<std::unique_ptr<Stmt>> implicitMain;
+
     while (!isAtEnd()) {
-        try {
-            auto decl = parseTopLevelDecl();
-            if (decl) module->addDecl(std::move(decl));
-        } catch (...) {
-            // Recover from parse errors without crashing.
-            ctx_.diagnostics().error(current().location,
-                "parse error; attempting recovery");
-            synchronize();
+        // Peek: is this a declaration keyword?
+        TokenKind k = current().kind;
+        bool isDecl = (k == TokenKind::KwFn   || k == TokenKind::KwFun   ||
+                       k == TokenKind::KwPub   || k == TokenKind::KwStruct||
+                       k == TokenKind::KwEnum  || k == TokenKind::KwType  ||
+                       k == TokenKind::KwImport|| k == TokenKind::KwModule||
+                       k == TokenKind::KwLet   || k == TokenKind::KwVar   ||
+                       k == TokenKind::KwConst);
+        if (isDecl) {
+            try {
+                auto decl = parseTopLevelDecl();
+                if (decl) module->addDecl(std::move(decl));
+            } catch (...) {
+                ctx_.diagnostics().error(current().location,
+                    "parse error; attempting recovery");
+                synchronize();
+            }
+        } else {
+            // Bare statement at file scope — fold into implicit main.
+            try {
+                auto stmt = parseStmt();
+                if (stmt) implicitMain.push_back(std::move(stmt));
+            } catch (...) {
+                ctx_.diagnostics().error(current().location,
+                    "parse error; attempting recovery");
+                synchronize();
+            }
         }
+    }
+
+    // Emit synthetic  fun main() { … }  if there were any top-level statements.
+    if (!implicitMain.empty()) {
+        auto body = std::make_unique<BlockStmt>(std::move(implicitMain));
+        auto mainFn = std::make_unique<FunctionDecl>(
+            "main",
+            std::vector<std::unique_ptr<ParameterDecl>>{},
+            /*returnType=*/nullptr,
+            std::move(body),
+            /*isPub=*/true);
+        module->addDecl(std::move(mainFn));
     }
 
     const SourceLocation end = current().location;
